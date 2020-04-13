@@ -1,28 +1,21 @@
 #!/bin/sh
-# simple version
 
-# the name of the script without a path
-name=`basename $0`
+scriptName=`basename $0`
+secondParameter=$1
+#check if we have to do lowercasing or uppercasing
 
-# function for printing error messages to diagnostic output
-error_msg() 
-{ 
-        echo "$name: error: $1" 1>&2 
-}
-
-
-
-# if no arguments given
-if test -z "$1"
+if test -z "$secondParameter"
 then
-cat<<EOT 1>&2
+	echo "nothing"
 
-usage: 
-	modify [-r] [-l|-u] <dir/file names...>
-  	modify [-r] <sed pattern> <dir/file names...>
-  	modify [-h]
+elif test $secondParameter = "-l"
+then
+	echo "lowercasing"
+elif test $secondParameter = "-u"
+then
+	echo "uppercasing"
+else
+	echo "not supported parameter"
 
-EOT
 fi
-
 
