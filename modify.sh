@@ -3,7 +3,9 @@
 #functions renaming a file
 renameFileUppercase(){
 oldFileName=$1
-mv $oldFileName ${oldFileName^^}
+newNameNoExt=$(tr '[:lower:]' '[:upper:]' <<< "${oldFileName%.*}")
+newFileName="$newNameNoExt.${oldFileName#*.}"
+mv $oldFileName $newFileName
 ls
 }
 renameFileLowercase(){
@@ -12,19 +14,54 @@ newFileName=`echo $oldFileName  | tr '[A-Z]' '[a-z]'`
 mv $oldFileName $newFileName
 ls
 }
+renameFileSed(){
+echo "Sed command!"
+ls
+}
+showHelp(){
+cat <<EOT
+-----------------------------------------------------------------------------------------------------------------------
+The script modify.sh is designed to rename filenames in a following way:
 
-#main body
+modify [-r] [-l|-u] <dir/file names...>
+modify [-r] <sed pattern> <dir/file names...>
+modify [-h]
 
-scriptName=`basename $0`
+parameters:
+-r ------------------> change names of all files in all subfolders of a given folder (recursion)
+-l ------------------> lowercasing
+-u ------------------> uppercasing
+<sed pattern> -------> sed pattern for sed command, which will operate on the file names instead
+<dir/file names...> -> folder name OR list of file names to change
+-h ------------------> help
+
+examples of CORRECT usage:
+modify -r -u dirName --------------------> will uppercase dirName, as well as all the folders and files within dirName
+modify -l SOMEDIRECTORY -----------------> will lowercase only the folder name SOMEDIRECTORY
+modify -u file1.txt file2.txt file3.txt -> will uppercase names of these 3 files
+modify 's/text/tekst' textFile.c --------> will call sed command to replace 'text' by 'tekst' in a given file name
+
+examples of INCORRECT usage:
+modify -r -u file.txt -> recursion can be used only with a directory name
+
+made by Alexander Wrzosek
+-----------------------------------------------------------------------------------------------------------------------
+EOT
+}
+
+############# main body ######################
+
 firstParameter=$1
 secondParameter=$2
-thirdParameter=$3
+thirdParameter=${@:3} # jest lista plikow, tylko czasami second parameter moze miec liste pliow
+#rowniez funckje nie obsluguja listy plikow poki co
 
-#recursion or not
+echo $thirdParameter
+
+#recursion
 if test -z "$firstParameter"
 then
 	echo "first parameter empty"
-
 elif test $firstParameter = "-r"
 then
 	echo "with recursion"
@@ -34,33 +71,48 @@ then
 		echo "second parameter empty"
 	elif test $secondParameter = "-l"
 	then
-		echo "lowercasing"
 		#check if user wrote filename
 		if test -z "$thirdParameter"
 		then
-			echo "no file name!"
+			echo "no folder name!"
 		else 
 			renameFileLowercase $thirdParameter
 		fi
 	elif test $secondParameter = "-u"
 	then
-		echo "uppercasing"
 		#check if user wrote filename
 		if test -z "$thirdParameter"
 		then
-			echo "no file name!"
+			echo "no folder name!"
 		else 
 			renameFileUppercase $thirdParameter
 		fi
-	else
-		echo "not supported parameter"
-	fi
+    #sed pattern
+    elif [[ "$secondParameter" == "s"* ]]
+	then
+        #jak potrzeba potem podac '' do sed command
+        #quotation="'"
+        #withQuotation=${quotation}${secondParameter}${quotation}
+        #check if user wrote filename
+        if test -z "$thirdParameter"
+        then
+            echo "no folder name!"
+        else   
+			renameFileSed $secondParameter $thirdParameter
+        fi
+    else
+        echo "not supported parameter"
+    fi
 	
+#show help
+elif test $firstParameter = "-h"
+then
+    showHelp
+    
 #without recursion
 else	
 	if test $firstParameter = "-l"
 	then
-		echo "lowercasing"
 		#check if user wrote filename
 		if test -z "$secondParameter"
 		then
@@ -70,7 +122,6 @@ else
 		fi
 	elif test $firstParameter = "-u"
 	then
-		echo "uppercasing"
 		#check if user wrote filename
 		if test -z "$secondParameter"
 		then
@@ -78,6 +129,16 @@ else
 		else 
 			renameFileUppercase $secondParameter
 		fi
+    #sed pattern
+    elif [[ "$firstParameter" == "s"* ]]
+	then
+        #check if user wrote filename
+        if test -z "$secondParameter"
+        then
+            echo "no folder name!"
+        else   
+			renameFileSed $firstParameter $secondParameter
+        fi
 	else
 		echo "not supported parameter"
 	fi
