@@ -1,23 +1,38 @@
 #!/bin/bash
 
-#functions renaming a file
+#functions
 renameFileUppercase(){
-oldFileName=$1
-newNameNoExt=$(tr '[:lower:]' '[:upper:]' <<< "${oldFileName%.*}")
-newFileName="$newNameNoExt.${oldFileName#*.}"
-mv $oldFileName $newFileName
+oldFileNames=$*
+for file in $oldFileNames
+do
+    newNameNoExt=$(tr '[:lower:]' '[:upper:]' <<< "${file%.*}")
+    newFileName="$newNameNoExt.${file#*.}"
+    mv $file $newFileName
+done
+
 ls
 }
 renameFileLowercase(){
-oldFileName=$1
-newFileName=`echo $oldFileName  | tr '[A-Z]' '[a-z]'`
-mv $oldFileName $newFileName
+oldFileNames=$*
+for file in $oldFileNames
+do
+    newNameNoExt=$(tr '[:upper:]' '[:lower:]' <<< "${file%.*}")
+    newFileName="$newNameNoExt.${file#*.}"
+    mv $file $newFileName
+done
 ls
 }
 renameFileSed(){
-echo "Sed command!"
-ls
+sedPattern=$1
+oldFileNames=${@:2}
+for file in $oldFileNames
+do
+    newFileName=$(echo $file | sed "$sedPattern")
+    mv $file $newFileName
+done
+ls 
 }
+#ls -R -> recursive ls
 showHelp(){
 cat <<EOT
 -----------------------------------------------------------------------------------------------------------------------
@@ -52,19 +67,16 @@ EOT
 ############# main body ######################
 
 firstParameter=$1
-secondParameter=$2
-thirdParameter=${@:3} # jest lista plikow, tylko czasami second parameter moze miec liste pliow
-#rowniez funckje nie obsluguja listy plikow poki co
 
-echo $thirdParameter
-
-#recursion
+############recursion
 if test -z "$firstParameter"
 then
 	echo "first parameter empty"
 elif test $firstParameter = "-r"
 then
 	echo "with recursion"
+	secondParameter=$2
+	thirdParameter=${@:3} #now 3rd parameter can contain a list of files
 	#check if we have to do lowercasing or uppercasing with recursion
 	if test -z "$secondParameter"
 	then
@@ -90,9 +102,6 @@ then
     #sed pattern
     elif [[ "$secondParameter" == "s"* ]]
 	then
-        #jak potrzeba potem podac '' do sed command
-        #quotation="'"
-        #withQuotation=${quotation}${secondParameter}${quotation}
         #check if user wrote filename
         if test -z "$thirdParameter"
         then
@@ -104,13 +113,14 @@ then
         echo "not supported parameter"
     fi
 	
-#show help
+###########show help
 elif test $firstParameter = "-h"
 then
     showHelp
     
-#without recursion
-else	
+###########without recursion
+else
+    secondParameter=${@:2} #second parameter may contain a list of files
 	if test $firstParameter = "-l"
 	then
 		#check if user wrote filename
