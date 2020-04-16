@@ -1,38 +1,173 @@
 #!/bin/bash
 
 #functions
-renameFileUppercase(){
-oldFileNames=$*
+renameFiles(){
+lowOrUp=$1
+oldFileNames=${@:2}
 for file in $oldFileNames
 do
-    newNameNoExt=$(tr '[:lower:]' '[:upper:]' <<< "${file%.*}")
-    newFileName="$newNameNoExt.${file#*.}"
-    mv $file $newFileName
+    #if contains .
+    if [[ "$file" == *"."* ]]
+    then
+        if test $lowOrUp = "-l"
+        then
+            newNameNoExt=$(tr '[:upper:]' '[:lower:]' <<< "${file%.*}")
+        elif test $lowOrUp = "-u"
+        then
+            newNameNoExt=$(tr '[:lower:]' '[:upper:]' <<< "${file%.*}")
+        else
+            echo "not supported parameter"
+        fi
+        newFileName="$newNameNoExt.${file#*.}"
+        if [[ "$file" != $newFileName ]]
+        then
+            mv $file $newFileName
+        fi
+    else
+        #folder or file without extention
+        if test $lowOrUp = "-l"
+        then
+            newFileName=$(tr '[:upper:]' '[:lower:]' <<< "${file}")
+        elif test $lowOrUp = "-u"
+        then
+            newFileName=$(tr '[:lower:]' '[:upper:]' <<< "${file}")
+        else
+            echo "not supported parameter"
+        fi
+        if [[ "$file" != $newFileName ]]
+        then
+            mv $file $newFileName
+        fi
+    fi
 done
+ls
+}
 
-ls
+renameFilesRecursive(){
+lowOrUp=$1
+mainDir=$2
+#check if folder - recursive only with folders
+if test -d "$mainDir"
+then
+    #depth first is needed
+    inMainDir="$(find "$mainDir" -depth)"
+    for file in $inMainDir
+    do
+        #if its not the root folder 
+        if [[ "$file" == *"/"* ]]
+        then
+            fileNameNoPath=${file##*/}
+            oldPath=${file%/*}
+            slash="/"
+            #if contains '.'
+            if [[ "$file" == *"."* ]]
+            then
+                if test $lowOrUp = "-u"
+                then
+                    newNameNoExt=$(tr '[:lower:]' '[:upper:]' <<< "${fileNameNoPath%.*}")
+                elif test $lowOrUp = "-l"
+                then
+                    newNameNoExt=$(tr '[:upper:]' '[:lower:]' <<< "${fileNameNoPath%.*}")
+                else
+                    echo "not supported parameter"
+                fi
+                newFileName="$newNameNoExt.${fileNameNoPath#*.}"
+                newFileNameWithPath=$oldPath$slash$newFileName
+                if [[ "$file" != $newFileNameWithPath ]]
+                then
+                    mv $file $newFileNameWithPath
+                fi
+            else
+                #folder or file without extention
+                if test $lowOrUp = "-u"
+                then
+                    newFileName=$(tr '[:lower:]' '[:upper:]' <<< "${file##*/}")
+                elif test $lowOrUp = "-l"
+                then
+                    newFileName=$(tr '[:upper:]' '[:lower:]' <<< "${file##*/}")
+                else
+                    echo "not supported parameter"
+                fi
+                newFileNameWithPath=$oldPath$slash$newFileName
+                if [[ "$file" != $newFileNameWithPath ]]
+                then
+                    mv $file $newFileNameWithPath
+                fi
+            fi
+        else 
+            #change the name of root folder too
+            if test $lowOrUp = "-u"
+            then
+            newFileName=$(tr '[:lower:]' '[:upper:]' <<< "$file")
+            elif test $lowOrUp = "-l"
+            then
+                 newFileName=$(tr '[:upper:]' '[:lower:]' <<< "$file")
+            else
+                echo "not supported parameter"
+            fi
+            if [[ "$file" != $newFileName ]]
+            then
+                mv $file $newFileName
+            fi
+            ls $newFileName -R
+        fi
+    done
+else
+    echo "only directories allowed with parameter -r!"
+fi
 }
-renameFileLowercase(){
-oldFileNames=$*
-for file in $oldFileNames
-do
-    newNameNoExt=$(tr '[:upper:]' '[:lower:]' <<< "${file%.*}")
-    newFileName="$newNameNoExt.${file#*.}"
-    mv $file $newFileName
-done
-ls
-}
+
 renameFileSed(){
 sedPattern=$1
 oldFileNames=${@:2}
 for file in $oldFileNames
 do
     newFileName=$(echo $file | sed "$sedPattern")
-    mv $file $newFileName
+    if [[ "$file" != $newFileName ]]
+    then
+        mv $file $newFileName
+    fi
 done
 ls 
 }
-#ls -R -> recursive ls
+
+renameFilesSedRecursive(){
+sedPattern=$1
+mainDir=$2
+#check if folder - recursive only with folders
+if test -d "$mainDir"
+then
+    #depth first is needed
+    inMainDir="$(find "$mainDir" -depth)"
+    for file in $inMainDir
+    do
+        #if its not the root folder 
+        if [[ "$file" == *"/"* ]]
+        then
+            fileNameNoPath=${file##*/}
+            oldPath=${file%/*}
+            slash="/"
+            newFileName=$(echo $fileNameNoPath | sed "$sedPattern")
+            newFileNameWithPath=$oldPath$slash$newFileName
+            if [[ "$file" != $newFileNameWithPath ]]
+            then
+                mv $file $newFileNameWithPath
+            fi
+        else 
+            #change the name of root folder too
+            newFileName=$(echo $file | sed "$sedPattern")
+            if [[ "$file" != $newFileName ]]
+            then
+                mv $file $newFileName
+            fi
+            ls $newFileName -R
+        fi
+    done
+else
+    echo "only directories allowed with parameter -r!"
+fi
+}
+
 showHelp(){
 cat <<EOT
 -----------------------------------------------------------------------------------------------------------------------
@@ -54,7 +189,7 @@ examples of CORRECT usage:
 modify -r -u dirName --------------------> will uppercase dirName, as well as all the folders and files within dirName
 modify -l SOMEDIRECTORY -----------------> will lowercase only the folder name SOMEDIRECTORY
 modify -u file1.txt file2.txt file3.txt -> will uppercase names of these 3 files
-modify 's/text/tekst' textFile.c --------> will call sed command to replace 'text' by 'tekst' in a given file name
+modify 's/text/tekst/' textFile.c --------> will call sed command to replace 'text' by 'tekst' in a given file name
 
 examples of INCORRECT usage:
 modify -r -u file.txt -> recursion can be used only with a directory name
@@ -74,45 +209,22 @@ then
 	echo "first parameter empty"
 elif test $firstParameter = "-r"
 then
-	echo "with recursion"
 	secondParameter=$2
 	thirdParameter=${@:3} #now 3rd parameter can contain a list of files
-	#check if we have to do lowercasing or uppercasing with recursion
 	if test -z "$secondParameter"
 	then
 		echo "second parameter empty"
-	elif test $secondParameter = "-l"
-	then
-		#check if user wrote filename
-		if test -z "$thirdParameter"
+	elif test -z "$thirdParameter"
 		then
 			echo "no folder name!"
-		else 
-			renameFileLowercase $thirdParameter
-		fi
-	elif test $secondParameter = "-u"
-	then
-		#check if user wrote filename
-		if test -z "$thirdParameter"
-		then
-			echo "no folder name!"
-		else 
-			renameFileUppercase $thirdParameter
-		fi
     #sed pattern
-    elif [[ "$secondParameter" == "s"* ]]
+    elif [[ "$secondParameter" == "s/"* ]]
 	then
-        #check if user wrote filename
-        if test -z "$thirdParameter"
-        then
-            echo "no folder name!"
-        else   
-			renameFileSed $secondParameter $thirdParameter
-        fi
-    else
-        echo "not supported parameter"
+        renameFilesSedRecursive $secondParameter $thirdParameter
+    else 
+        renameFilesRecursive $secondParameter $thirdParameter
     fi
-	
+
 ###########show help
 elif test $firstParameter = "-h"
 then
@@ -121,38 +233,14 @@ then
 ###########without recursion
 else
     secondParameter=${@:2} #second parameter may contain a list of files
-	if test $firstParameter = "-l"
-	then
-		#check if user wrote filename
-		if test -z "$secondParameter"
-		then
-			echo "no file name!"
-		else 
-			renameFileLowercase $secondParameter
-		fi
-	elif test $firstParameter = "-u"
-	then
-		#check if user wrote filename
-		if test -z "$secondParameter"
-		then
-			echo "no file name!"
-		else 
-			renameFileUppercase $secondParameter
-		fi
-    #sed pattern
-    elif [[ "$firstParameter" == "s"* ]]
-	then
-        #check if user wrote filename
-        if test -z "$secondParameter"
-        then
-            echo "no folder name!"
-        else   
-			renameFileSed $firstParameter $secondParameter
-        fi
+	#check if user wrote filename
+    if test -z "$secondParameter"
+    then
+        echo "no file name!"
+    elif [[ "$firstParameter" == "s/"* ]]
+    then
+        renameFileSed $firstParameter $secondParameter
 	else
-		echo "not supported parameter"
+		renameFiles $firstParameter $secondParameter
 	fi
 fi
-
-
-
