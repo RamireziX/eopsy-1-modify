@@ -17,6 +17,7 @@ do
             newNameNoExt=$(tr '[:lower:]' '[:upper:]' <<< "${file%.*}")
         else
             echo "not supported parameter"
+            exit 1
         fi
         newFileName="$newNameNoExt.${file#*.}"
         if [[ "$file" != $newFileName ]]
@@ -33,6 +34,7 @@ do
             newFileName=$(tr '[:lower:]' '[:upper:]' <<< "${file}")
         else
             echo "not supported parameter"
+            exit 1
         fi
         if [[ "$file" != $newFileName ]]
         then
@@ -40,7 +42,6 @@ do
         fi
     fi
 done
-ls
 }
 
 renameFilesRecursive(){
@@ -70,6 +71,7 @@ then
                     newNameNoExt=$(tr '[:upper:]' '[:lower:]' <<< "${fileNameNoPath%.*}")
                 else
                     echo "not supported parameter"
+                    exit 1
                 fi
                 newFileName="$newNameNoExt.${fileNameNoPath#*.}"
                 newFileNameWithPath=$oldPath$slash$newFileName
@@ -87,6 +89,7 @@ then
                     newFileName=$(tr '[:upper:]' '[:lower:]' <<< "${file##*/}")
                 else
                     echo "not supported parameter"
+                    exit 1
                 fi
                 newFileNameWithPath=$oldPath$slash$newFileName
                 if [[ "$file" != $newFileNameWithPath ]]
@@ -104,12 +107,12 @@ then
                  newFileName=$(tr '[:upper:]' '[:lower:]' <<< "$file")
             else
                 echo "not supported parameter"
+                exit 1
             fi
             if [[ "$file" != $newFileName ]]
             then
                 mv $file $newFileName
             fi
-            ls $newFileName -R
         fi
     done
 else
@@ -128,7 +131,6 @@ do
         mv $file $newFileName
     fi
 done
-ls 
 }
 
 renameFilesSedRecursive(){
@@ -160,7 +162,6 @@ then
             then
                 mv $file $newFileName
             fi
-            ls $newFileName -R
         fi
     done
 else
@@ -186,13 +187,19 @@ parameters:
 -h ------------------> help
 
 examples of CORRECT usage:
-modify -r -u dirName --------------------> will uppercase dirName, as well as all the folders and files within dirName
-modify -l SOMEDIRECTORY -----------------> will lowercase only the folder name SOMEDIRECTORY
-modify -u file1.txt file2.txt file3.txt -> will uppercase names of these 3 files
+modify -r -u dirName ---------------------> will uppercase dirName, as well as all the folders and files within dirName
+modify -l SOMEDIRECTORY ------------------> will lowercase only the folder name SOMEDIRECTORY
+modify -u file1.txt file2.txt file3.txt --> will uppercase names of these 3 files
 modify 's/text/tekst/' textFile.c --------> will call sed command to replace 'text' by 'tekst' in a given file name
 
+examples of IMPROPER usage (will still execute)
+modify -r 's/a/b/' dir1 dir2 -> recursive function will work only for dir1
+
 examples of INCORRECT usage:
-modify -r -u file.txt -> recursion can be used only with a directory name
+modify -r -u file.txt -----> recursion can be used only with a directory name
+modify 's/a/b' file.txt ---> wrong sed command (lacks last '/')
+modify '3 s/a/b' file.txt -> the program only accepts sed command starting with s
+(other sed commands deal with lines of text in a file, not useful in just a filename)
 
 made by Alexander Wrzosek
 -----------------------------------------------------------------------------------------------------------------------
@@ -210,7 +217,7 @@ then
 elif test $firstParameter = "-r"
 then
 	secondParameter=$2
-	thirdParameter=${@:3} #now 3rd parameter can contain a list of files
+	thirdParameter=$3 
 	if test -z "$secondParameter"
 	then
 		echo "second parameter empty"
