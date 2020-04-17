@@ -3,29 +3,33 @@
 #functions
 renameFiles(){
 lowOrUp=$1
-oldFileNames=${@:2}
+oldFileNames=${@:2} #list of files
 for file in $oldFileNames
 do
-    #if contains .
+    #if contains extention ('.')
     if [[ "$file" == *"."* ]]
     then
+        #do lowercasing or uppercasing without extention
         if test $lowOrUp = "-l"
         then
             newNameNoExt=$(tr '[:upper:]' '[:lower:]' <<< "${file%.*}")
         elif test $lowOrUp = "-u"
         then
             newNameNoExt=$(tr '[:lower:]' '[:upper:]' <<< "${file%.*}")
-        else
+        else   #user wrote something like -k which isnt supported
             echo "not supported parameter"
             exit 1
         fi
+        #add unmodified extention
         newFileName="$newNameNoExt.${file#*.}"
+        #no need to execute mv if filename didn't change
         if [[ "$file" != $newFileName ]]
         then
             mv $file $newFileName
         fi
     else
         #folder or file without extention
+        #do lowercasing or uppercasing 
         if test $lowOrUp = "-l"
         then
             newFileName=$(tr '[:upper:]' '[:lower:]' <<< "${file}")
@@ -33,9 +37,11 @@ do
         then
             newFileName=$(tr '[:lower:]' '[:upper:]' <<< "${file}")
         else
+        #user wrote something like -k which isnt supported
             echo "not supported parameter"
             exit 1
         fi
+        #no need to execute mv if filename didn't change
         if [[ "$file" != $newFileName ]]
         then
             mv $file $newFileName
@@ -46,17 +52,18 @@ done
 
 renameFilesRecursive(){
 lowOrUp=$1
-mainDir=$2
+mainDir=$2 #T assumed that recursive function works with 1 folder
 #check if folder - recursive only with folders
 if test -d "$mainDir"
 then
-    #depth first is needed
+    #create list of files using recursive find
     inMainDir="$(find "$mainDir" -depth)"
     for file in $inMainDir
     do
         #if its not the root folder 
         if [[ "$file" == *"/"* ]]
         then
+            #extract only the name of file without path
             fileNameNoPath=${file##*/}
             oldPath=${file%/*}
             slash="/"
@@ -73,6 +80,7 @@ then
                     echo "not supported parameter"
                     exit 1
                 fi
+                #add unchanged extention and old path to new filename
                 newFileName="$newNameNoExt.${fileNameNoPath#*.}"
                 newFileNameWithPath=$oldPath$slash$newFileName
                 if [[ "$file" != $newFileNameWithPath ]]
@@ -91,6 +99,7 @@ then
                     echo "not supported parameter"
                     exit 1
                 fi
+                #add old path to new filename
                 newFileNameWithPath=$oldPath$slash$newFileName
                 if [[ "$file" != $newFileNameWithPath ]]
                 then
@@ -116,15 +125,17 @@ then
         fi
     done
 else
+    #if $2 is not a dir
     echo "only directories allowed with parameter -r!"
 fi
 }
 
+#functions for sed pattern
 renameFileSed(){
 sedPattern=$1
 oldFileNames=${@:2}
 for file in $oldFileNames
-do
+do  #call sed on each file with given sed pattern
     newFileName=$(echo $file | sed "$sedPattern")
     if [[ "$file" != $newFileName ]]
     then
@@ -133,7 +144,8 @@ do
 done
 }
 
-renameFilesSedRecursive(){
+
+renameFilesSedRecursive(){  #same approach as above functions
 sedPattern=$1
 mainDir=$2
 #check if folder - recursive only with folders
@@ -224,7 +236,7 @@ then
 	elif test -z "$thirdParameter"
 		then
 			echo "no folder name!"
-    #sed pattern
+    #sed pattern or -l/-u
     elif [[ "$secondParameter" == "s/"* ]]
 	then
         renameFilesSedRecursive $secondParameter $thirdParameter
@@ -244,6 +256,7 @@ else
     if test -z "$secondParameter"
     then
         echo "no file name!"
+    #sed pattern or -l/-u
     elif [[ "$firstParameter" == "s/"* ]]
     then
         renameFileSed $firstParameter $secondParameter
