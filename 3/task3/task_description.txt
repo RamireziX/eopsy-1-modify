@@ -1,0 +1,18 @@
+Lab 3 description
+Alexander Wrzosek
+
+For 2 processes we can see that the simulation in total ran for 4000 ms 
+(shorter time that 10000 ms specified in conf file), with each process running
+for 2000 ms. They were CPU blocked 3 times, every 500 ms (500, 1000, 1500).
+
+For 5 processes we can see similar results, just repeated 5 times. The simulation ran 10000 ms,
+as expected for 2000 ms (mean runtime for 1 process) * 5
+
+For 10 processes something more started to happen. Mainly, only 4 first processes completed the mean 2000
+ms runtime, and were CPU blocked 3 times. Process 5 only got blocked 2 times, and run for 1000 ms, and 
+process 6 got blocked only 1 time and run for 1000 ms too. The last 4 processes didn't have
+any completion time. The reason behing it is that we specified 10000 ms as duration of simulation.
+10000 ms = 2000 ms + 2000 ms + 2000 ms + 2000 ms + 1000 ms + 1000 ms. This gives us space for only 6 
+first processes. The time for last two processes is shorter, as the application noticed, that 10000 ms
+specified time is running out, reduced completion time for processes 5 and 6, and completely cut off
+the last 4 processes.
