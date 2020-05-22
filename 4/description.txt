@@ -1,0 +1,10 @@
+The page replacement algorithm is located in PageFault.java file, 
+and it's a FIFO (First In, First Out) algorithm.
+It uses a while loop to find the proper page while making sure that
+number of mapped pages is smaller or equal than virtPageNum.
+Later, it brings oldestPage from memory into Page object.
+Then sets the physical memory address of the page to be added equal 
+to the page to be removed, and then removes the page.
+
+
+   

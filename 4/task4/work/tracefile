@@ -1,7 +1,41 @@
-READ 4 ... okay
-READ 13 ... okay
-WRITE cc32 ... okay
+READ 0 ... okay
 READ 4000 ... okay
-READ 4000 ... okay
-WRITE 6001 ... okay
-WRITE e99e2 ... page fault
+READ 8000 ... okay
+READ c000 ... okay
+READ 10000 ... okay
+READ 14000 ... okay
+READ 18000 ... okay
+READ 1c000 ... okay
+READ 20000 ... okay
+READ 24000 ... okay
+READ 28000 ... okay
+READ 2c000 ... okay
+READ 30000 ... okay
+READ 34000 ... okay
+READ 38000 ... okay
+READ 3c000 ... okay
+READ 40000 ... okay
+READ 44000 ... okay
+READ 48000 ... okay
+READ 4c000 ... okay
+READ 50000 ... okay
+READ 54000 ... okay
+READ 58000 ... okay
+READ 5c000 ... okay
+READ 60000 ... okay
+READ 64000 ... okay
+READ 68000 ... okay
+READ 6c000 ... okay
+READ 70000 ... okay
+READ 74000 ... okay
+READ 78000 ... okay
+READ 7c000 ... okay
+READ 80000 ... page fault
+READ 84000 ... page fault
+READ 88000 ... page fault
+READ 8c000 ... page fault
+READ 90000 ... page fault
+READ 94000 ... page fault
+READ 98000 ... page fault
+READ 9c000 ... page fault
+READ a0000 ... page fault
