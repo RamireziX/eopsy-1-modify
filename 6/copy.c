@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdbool.h>
 
+//help message
 const char * help = "Made by Alexander Wrzosek\n"
                     "The program copies one file to another " 
                     "using 2 different methods.\n"
@@ -35,6 +36,7 @@ int main(int argc, char *argv[])
     int option;
     char * oldFile;
     char * newFile;
+    //to indicate which method will be used
     bool withM = false;
     
     //user didn't supply options or arguments
@@ -51,6 +53,7 @@ int main(int argc, char *argv[])
             case 'm':
                 //only if user gave exactly 1 option with 2 args
                 if(argc == 4){
+                    //get 2 filenames
                     oldFile = argv[2];
                     newFile = argv[3];
                     withM = true;
@@ -62,6 +65,7 @@ int main(int argc, char *argv[])
                     exit(1);
                 }
             case 'h':
+                //print help
                 printf("%s", help);
                 exit(0);
                 break;
@@ -73,7 +77,8 @@ int main(int argc, char *argv[])
             exit(1);
         }
     
-    //without -m
+    //copying without -m
+    //only if user supplied exactly 2 filenames
     if(argc == 3){
         oldFile = argv[1];
         newFile = argv[2];
@@ -143,11 +148,13 @@ void copy(char * oldFile, char * newFile, bool withM){
     
 }
 
+//copying without -m
 void copyNoM(int fd, int fdNew, int bufSize){
     
     printf("Copying using read() and write():\n");
     
     int size, size2;
+    //allocate memory space
     char * oldFileContents = (char *) calloc(bufSize, sizeof(char));
     
     //read contents of oldFile
@@ -158,8 +165,9 @@ void copyNoM(int fd, int fdNew, int bufSize){
         exit(1);
     }
     
-    //write to new file
+    //truncate if new file was bigger
     ftruncate(fdNew, bufSize);
+    //write to new file
     size2 = write(fdNew, oldFileContents, bufSize);
     
     if(size2 == -1){
@@ -168,6 +176,7 @@ void copyNoM(int fd, int fdNew, int bufSize){
     }
 }
 
+//copy with -m
 void copyWithM(int fd, int fdNew, int bufSize){    
     
     printf("Copying using mmap() and memcpy():\n");
@@ -179,9 +188,9 @@ void copyWithM(int fd, int fdNew, int bufSize){
     oldFileContents = mmap(NULL, bufSize, PROT_READ,
         MAP_PRIVATE, fd, 0);
     
-    //write to new file
-    //initialise
+    //truncate if new file was bigger
     ftruncate(fdNew, bufSize);
+    //write to new file
     newFileContents = mmap(NULL, bufSize, PROT_READ | PROT_WRITE,
         MAP_SHARED, fdNew, 0);
     //copy
